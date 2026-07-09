@@ -338,38 +338,50 @@ function PlanModal({ plan, onClose }: { plan: Plan; onClose: () => void }) {
   if (!el) return
 
   let startY = 0
-  let startScroll = 0
+  let delta = 0
+  let dragging = false
 
   const onTouchStart = (e: TouchEvent) => {
+    // Start a dismiss-drag only when the sheet is scrolled to the very top —
+    // otherwise this touch is a normal scroll of the modal's own content.
+    dragging = el.scrollTop <= 0
     startY = e.touches[0].clientY
-    startScroll = el.scrollTop
+    delta = 0
   }
 
   const onTouchMove = (e: TouchEvent) => {
-    const delta = e.touches[0].clientY - startY
-    // только если в самом верху и тянем вниз
-    if (startScroll <= 0 && delta > 0) {
-      // останавливаем скролл страницы и двигаем модал
-      e.stopPropagation()
-      el.style.transform = `translateY(${delta}px)`
+    if (!dragging) return
+    delta = e.touches[0].clientY - startY
+    if (delta > 0) {
+      // Pulling down from the top: drag the sheet AND stop the browser from also
+      // scrolling/overscrolling. preventDefault only works on a NON-passive
+      // listener — the old passive one let native scroll swallow the gesture, so
+      // the swipe rarely crossed the close threshold (the reported bug).
+      e.preventDefault()
       el.style.transition = 'none'
+      el.style.transform = `translateY(${delta}px)`
+    } else {
+      // Pulling back up: hand the gesture back to normal content scrolling.
+      dragging = false
+      el.style.transform = ''
     }
   }
 
-  const onTouchEnd = (e: TouchEvent) => {
-    const delta = e.changedTouches[0].clientY - startY
-    if (startScroll <= 0 && delta > 80) {
+  const onTouchEnd = () => {
+    if (!dragging) return
+    dragging = false
+    if (delta > 80) {
       el.style.transition = 'transform 0.3s ease'
       el.style.transform = `translateY(${window.innerHeight}px)`
-      setTimeout(() => onClose(), 300)
+      setTimeout(() => onClose(), 260)
     } else {
-      el.style.transition = 'transform 0.2s ease'
+      el.style.transition = 'transform 0.25s ease'
       el.style.transform = 'translateY(0)'
     }
   }
 
   el.addEventListener('touchstart', onTouchStart, { passive: true })
-  el.addEventListener('touchmove', onTouchMove, { passive: true })
+  el.addEventListener('touchmove', onTouchMove, { passive: false })
   el.addEventListener('touchend', onTouchEnd, { passive: true })
 
   return () => {

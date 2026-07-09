@@ -692,19 +692,29 @@ nav, button,
   .about-plane {
     width: 96px;
   }
+  /* Phone positions follow the client's marked screenshot: left plane tucked into
+     the top-left corner and pulled further left so it stops bleeding into the first
+     text line; centre plane moved to the button's top-left pocket (bottom-anchored,
+     so it stays put regardless of text reflow above); right plane dropped into the
+     text card's bottom-right empty pocket. */
   .about-plane--left {
-    top: 12px;
-    left: -20px;
+    top: 2px;
+    left: -46px;
   }
   .about-plane--center {
     width: 88px;
-    top: 150px;
-    left: 42%;
+    top: auto;
+    bottom: 24px;
+    left: -22px;
+    right: auto;
   }
   .about-plane--right {
     width: 96px;
-    top: 180px;
-    right: -14px;
+    top: auto;
+    bottom: 548px; /* bottom-anchored: the tags+button block below the text card is a
+                      constant ~557px tall, so this keeps the plane in the card's
+                      bottom-right pocket regardless of how the paragraph text reflows */
+    right: -12px;
   }
 }
 
