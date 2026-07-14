@@ -1,10 +1,28 @@
 import Link from 'next/link'
-import { getMetrics, RANGES, type Range, type Metrics } from '@/lib/db'
+import {
+  getMetrics,
+  getSeries,
+  RANGES,
+  METRIC_LABELS,
+  type Range,
+  type MetricKey,
+  type Metrics,
+  type SeriesPoint,
+} from '@/lib/db'
 import { LogoutButton } from './logout-button'
+import { MetricChart } from './metric-chart'
 
 export const dynamic = 'force-dynamic'
 
 const RANGE_KEYS = new Set<Range>(RANGES.map((r) => r.key))
+const METRIC_KEYS = new Set<MetricKey>(['visits', 'unique', 'bounces', 'subscribe'])
+
+const COLORS: Record<MetricKey, string> = {
+  visits: '#3d8bff',
+  unique: '#35c2ff',
+  bounces: '#ff8f6b',
+  subscribe: '#4fd08a',
+}
 
 function fmt(n: number): string {
   return n.toLocaleString('ru-RU')
@@ -13,35 +31,35 @@ function fmt(n: number): string {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ range?: string }>
+  searchParams: Promise<{ range?: string; metric?: string }>
 }) {
   const sp = await searchParams
   const range: Range = RANGE_KEYS.has(sp.range as Range) ? (sp.range as Range) : '7d'
+  const metric: MetricKey | null = METRIC_KEYS.has(sp.metric as MetricKey)
+    ? (sp.metric as MetricKey)
+    : null
 
   let metrics: Metrics | null = null
+  let series: SeriesPoint[] | null = null
   let dbError = false
   try {
     metrics = await getMetrics(range)
+    if (metric) series = await getSeries(metric, range)
   } catch {
     dbError = true
   }
 
-  const cards = metrics
+  const cards: { key: MetricKey; label: string; value: number; hint: string }[] = metrics
     ? [
-        { label: 'Всего посещений', value: metrics.totalVisits, hint: 'все загрузки страницы' },
-        { label: 'Без повторных заходов', value: metrics.uniqueVisitors, hint: 'уникальные посетители' },
-        {
-          label: 'Отказы',
-          value: metrics.bounces,
-          hint: `${metrics.bounceRate}% — зашли и ушли, никуда не перейдя`,
-        },
-        {
-          label: 'Клики «Перейти к оплате»',
-          value: metrics.subscribeClicks,
-          hint: 'отправлено на оплату Tribute',
-        },
+        { key: 'visits', label: 'Всего посещений', value: metrics.totalVisits, hint: 'все загрузки страницы' },
+        { key: 'unique', label: 'Без повторных заходов', value: metrics.uniqueVisitors, hint: 'уникальные посетители' },
+        { key: 'bounces', label: 'Отказы', value: metrics.bounces, hint: `${metrics.bounceRate}% — зашли и ушли` },
+        { key: 'subscribe', label: 'Клики «Перейти к оплате»', value: metrics.subscribeClicks, hint: 'отправлено на оплату Tribute' },
       ]
     : []
+
+  const rangeQ = (r: Range) => `/admin?range=${r}${metric ? `&metric=${metric}` : ''}`
+  const selected = cards.find((c) => c.key === metric)
 
   return (
     <main
@@ -52,8 +70,12 @@ export default async function AdminPage({
         color: 'var(--text-primary, #fff)',
       }}
     >
+      <style
+        dangerouslySetInnerHTML={{
+          __html: '.admin-card{cursor:pointer}.admin-card:hover{transform:translateY(-3px)}',
+        }}
+      />
       <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-        {/* Header */}
         <header
           style={{
             display: 'flex',
@@ -73,14 +95,14 @@ export default async function AdminPage({
           <LogoutButton />
         </header>
 
-        {/* Range tabs */}
-        <nav style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        {/* Range tabs (keep the selected metric) */}
+        <nav style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
           {RANGES.map((r) => {
             const active = r.key === range
             return (
               <Link
                 key={r.key}
-                href={`/admin?range=${r.key}`}
+                href={rangeQ(r.key)}
                 style={{
                   padding: '8px 16px',
                   fontSize: '13px',
@@ -108,12 +130,13 @@ export default async function AdminPage({
               lineHeight: 1.6,
             }}
           >
-            Не удалось прочитать базу. Проверь, что заданы переменные окружения{' '}
-            <code>TURSO_DATABASE_URL</code> и <code>TURSO_AUTH_TOKEN</code>, и что таблица создана
-            (<code>node --env-file=.env.local scripts/init-db.mjs</code>).
+            Не удалось прочитать базу. Проверь переменные <code>TURSO_DATABASE_URL</code> и{' '}
+            <code>TURSO_AUTH_TOKEN</code> и что таблица создана (
+            <code>node --env-file=.env.local scripts/init-db.mjs</code>).
           </div>
         ) : (
           <>
+            {/* Clickable metric cards — click to toggle the chart below */}
             <div
               style={{
                 display: 'grid',
@@ -121,24 +144,101 @@ export default async function AdminPage({
                 gap: '16px',
               }}
             >
-              {cards.map((c) => (
-                <div
-                  key={c.label}
+              {cards.map((c) => {
+                const isSel = c.key === metric
+                const color = COLORS[c.key]
+                return (
+                  <Link
+                    key={c.key}
+                    href={isSel ? `/admin?range=${range}` : `/admin?range=${range}&metric=${c.key}`}
+                    className="admin-card"
+                    style={{
+                      display: 'block',
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      padding: '22px',
+                      borderRadius: '16px',
+                      background: 'rgba(10, 22, 46, 0.55)',
+                      border: `1px solid ${isSel ? color : 'rgba(120,170,255,0.18)'}`,
+                      boxShadow: isSel ? `0 0 0 1px ${color}, 0 8px 30px rgba(0,0,0,0.35)` : 'none',
+                      transition: 'transform 0.15s ease, border-color 0.15s ease',
+                    }}
+                  >
+                    <div style={{ fontSize: '13px', color: 'var(--text-muted, #7a9cc4)' }}>{c.label}</div>
+                    <div style={{ fontSize: '34px', fontWeight: 800, margin: '6px 0 4px', lineHeight: 1.1 }}>
+                      {fmt(c.value)}
+                    </div>
+                    <div style={{ fontSize: '12px', color: isSel ? color : 'var(--text-label, #3a5a8a)' }}>
+                      {isSel ? '▲ скрыть график' : `${c.hint} · ▾ график`}
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+
+            {/* Chart for the selected metric */}
+            {metric && selected && series && (
+              <section
+                style={{
+                  marginTop: '20px',
+                  padding: '20px 20px 12px',
+                  borderRadius: '16px',
+                  background: 'rgba(10, 22, 46, 0.55)',
+                  border: '1px solid rgba(120,170,255,0.18)',
+                }}
+              >
+                <header
                   style={{
-                    padding: '22px',
-                    borderRadius: '16px',
-                    background: 'rgba(10, 22, 46, 0.55)',
-                    border: '1px solid rgba(120,170,255,0.18)',
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    marginBottom: '14px',
                   }}
                 >
-                  <div style={{ fontSize: '13px', color: 'var(--text-muted, #7a9cc4)' }}>{c.label}</div>
-                  <div style={{ fontSize: '34px', fontWeight: 800, margin: '6px 0 4px', lineHeight: 1.1 }}>
-                    {fmt(c.value)}
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-label, #3a5a8a)' }}>
+                      График по времени · {RANGES.find((r) => r.key === range)?.label.toLowerCase()}
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: 700, marginTop: '2px' }}>
+                      {METRIC_LABELS[metric]}{' '}
+                      <span style={{ color: COLORS[metric] }}>· {fmt(selected.value)}</span>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-label, #3a5a8a)' }}>{c.hint}</div>
-                </div>
-              ))}
-            </div>
+                  <Link
+                    href={`/admin?range=${range}`}
+                    aria-label="Закрыть график"
+                    style={{
+                      flexShrink: 0,
+                      width: '30px',
+                      height: '30px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '8px',
+                      textDecoration: 'none',
+                      color: 'var(--text-muted, #7a9cc4)',
+                      border: '1px solid rgba(120,170,255,0.22)',
+                      fontSize: '16px',
+                      lineHeight: 1,
+                    }}
+                  >
+                    ✕
+                  </Link>
+                </header>
+                <MetricChart data={series} color={COLORS[metric]} />
+                <p
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--text-label, #3a5a8a)',
+                    margin: '6px 0 0',
+                  }}
+                >
+                  {range === 'today' ? 'по часам (UTC)' : 'по дням (UTC)'} · наведи на столбик, чтобы
+                  увидеть точное число
+                </p>
+              </section>
+            )}
 
             <p style={{ fontSize: '12px', color: 'var(--text-label, #3a5a8a)', marginTop: '20px', lineHeight: 1.6 }}>
               «Клики к оплате» — сколько раз нажали «Перейти к оплате» (отправка на Tribute), а не

@@ -115,3 +115,84 @@ export async function getMetrics(range: Range): Promise<Metrics> {
     subscribeClicks: num(subs.rows[0].n),
   }
 }
+
+// ── Time series (per-day, or per-hour for the "today" range) for one metric ──
+
+export type MetricKey = 'visits' | 'unique' | 'bounces' | 'subscribe'
+
+export const METRIC_LABELS: Record<MetricKey, string> = {
+  visits: 'Всего посещений',
+  unique: 'Без повторных заходов',
+  bounces: 'Отказы',
+  subscribe: 'Клики «Перейти к оплате»',
+}
+
+export type SeriesPoint = { label: string; count: number }
+
+function floorToDay(ms: number): number {
+  const d = new Date(ms)
+  d.setUTCHours(0, 0, 0, 0)
+  return d.getTime()
+}
+function floorToHour(ms: number): number {
+  const d = new Date(ms)
+  d.setUTCMinutes(0, 0, 0)
+  return d.getTime()
+}
+
+export async function getSeries(metric: MetricKey, range: Range): Promise<SeriesPoint[]> {
+  const db = getDb()
+  const byHour = range === 'today'
+  const fmt = byHour ? '%Y-%m-%dT%H' : '%Y-%m-%d'
+  const bucket = (col: string) => `strftime('${fmt}', ${col} / 1000, 'unixepoch')`
+
+  let since = sinceMs(range)
+  if (range === 'all') {
+    const min = await db.execute(`SELECT MIN(created_at) AS m FROM events`)
+    const m = min.rows[0]?.m
+    since = m ? Number(m) : Date.now()
+    const cap = Date.now() - 90 * 86_400_000 // keep at most ~90 daily bars
+    if (since < cap) since = cap
+  }
+
+  let raw: { bucket: string; n: number }[]
+  if (metric === 'bounces') {
+    const out = OUTBOUND_TARGETS.map(() => '?').join(',')
+    const r = await db.execute({
+      sql: `SELECT ${bucket('first_ts')} AS bucket, COUNT(*) AS n FROM (
+              SELECT session_id, MIN(created_at) AS first_ts
+              FROM events WHERE type='pageview' AND created_at >= ?
+              GROUP BY session_id
+            )
+            WHERE session_id NOT IN (
+              SELECT session_id FROM events
+              WHERE type='click' AND target IN (${out}) AND created_at >= ?
+            )
+            GROUP BY bucket`,
+      args: [since, ...OUTBOUND_TARGETS, since],
+    })
+    raw = r.rows.map((x) => ({ bucket: String(x.bucket), n: num(x.n) }))
+  } else {
+    const where = metric === 'subscribe' ? `type='click' AND target='pay'` : `type='pageview'`
+    const agg = metric === 'unique' ? `COUNT(DISTINCT visitor_id)` : `COUNT(*)`
+    const r = await db.execute({
+      sql: `SELECT ${bucket('created_at')} AS bucket, ${agg} AS n
+            FROM events WHERE ${where} AND created_at >= ? GROUP BY bucket`,
+      args: [since],
+    })
+    raw = r.rows.map((x) => ({ bucket: String(x.bucket), n: num(x.n) }))
+  }
+
+  // Fill empty buckets with 0 so the time axis has no gaps.
+  const counts = new Map(raw.map((r) => [r.bucket, r.n]))
+  const step = byHour ? 3_600_000 : 86_400_000
+  const start = byHour ? floorToHour(since) : floorToDay(since)
+  const points: SeriesPoint[] = []
+  for (let t = start; t <= Date.now() && points.length < 200; t += step) {
+    const iso = new Date(t).toISOString()
+    const key = byHour ? iso.slice(0, 13) : iso.slice(0, 10)
+    const label = byHour ? `${iso.slice(11, 13)}:00` : `${iso.slice(8, 10)}.${iso.slice(5, 7)}`
+    points.push({ label, count: counts.get(key) ?? 0 })
+  }
+  return points
+}
