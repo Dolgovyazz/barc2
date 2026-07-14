@@ -174,6 +174,14 @@ lib/utils.ts
 
 **Состояние:** `tsc --noEmit` чистый; самолёт about ниже (моб), иконки for-whom +25% (моб+десктоп); оверфлоу 0, карточки целы; проверено замерами+скринами на 375 и 1280.
 
+### Раунд 15 — деплой на Vercel: фикс pnpm-lockfile mismatch
+- **Проект деплоится на Vercel из GitHub `Dolgovyazz/barc2`** (ветка `main`, auto-deploy на пуш). Билд падал на шаге `pnpm install --frozen-lockfile` с `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH: The current "overrides" configuration doesn't match the value found in the lockfile`.
+- **Причина:** в `package.json` был блок `"pnpm": { "overrides": { "hono": "4.12.25" } }`. Vercel использует **pnpm 10.x** (по дате создания проекта; lockfileVersion `9.0`) — он ЕЩЁ читает `pnpm.overrides` из package.json и ждёт этот override в лок-файле. Но `pnpm-lock.yaml` его НЕ содержит: локальный **pnpm 11.9.0** (corepack) этот блок ИГНОРИРУЕТ (в pnpm 10+ overrides переехали в `pnpm-workspace.yaml`) и при последней регенерации записал лок без overrides. Config(pnpm10)={hono} ≠ lockfile(none) → frozen install падает.
+- **Фикс:** удалил мёртвый блок `pnpm` из `package.json` (коммит `33bce75`). Теперь overrides нет нигде → совпадает с лок-файлом. `hono` остаётся `4.12.25` (транзитивно залочен через `@hono/node-server`, резолв не меняется). Проверено: `pnpm install --frozen-lockfile` → «Already up to date», exit 0, лок-файл не тронут.
+- **NB на будущее:** если override реально понадобится — класть в `pnpm-workspace.yaml` (секция `overrides:`), НЕ в `package.json` (pnpm 11 его там не видит). Фикс лечит шаг установки; `next build` на Vercel отдельно (локально не гоняли — нельзя при живом dev, нюанс №7).
+
+**Состояние:** `tsc --noEmit` чистый; Vercel-install чинён (мёртвый `pnpm.overrides` убран, frozen install проходит); всё запушено в `barc2`.
+
 ---
 
 ## Не сделано / требует данных заказчика
