@@ -124,15 +124,32 @@ export function Nav() {
         </button>
       </div>
 
-      {/* Mobile dropdown menu */}
+      {/* Mobile dropdown menu — absolutely positioned so opening/closing it does
+          NOT change the sticky nav's in-flow height. Previously it was a static,
+          in-flow child: an open menu grew the nav by ~356px and pushed the hero
+          (which sits under the bar via -mt-[60px]) and every section down. Clicking
+          a link then closed the menu (0.35s collapse) WHILE the browser was
+          smooth-scrolling to the anchor, so the target slid out from under the
+          scroll and it landed in the wrong section. As an overlay it never shifts
+          layout, so smooth anchor scrolling lands correctly. It needs its own
+          background now (the bar no longer boxes it). */}
       <div
         id="mobile-menu"
         className="md:hidden"
         style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
           overflow: 'hidden',
           maxHeight: menuOpen ? '360px' : '0',
           opacity: menuOpen ? 1 : 0,
           transition: 'max-height 0.35s ease, opacity 0.3s ease',
+          background: 'rgba(2, 8, 20, 0.92)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderBottom: menuOpen ? '1px solid var(--border-subtle)' : '1px solid transparent',
+          pointerEvents: menuOpen ? 'auto' : 'none',
         }}
       >
         <div className="flex flex-col gap-2 px-5 pb-6 pt-1">

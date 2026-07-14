@@ -503,9 +503,9 @@ function renderIconSVG(iconKey: string) {
   if (!iconUrl) return null
 
   // The source PNGs draw their glyph at slightly different scales inside the same
-  // canvas, so at a fixed 108px box they render visually uneven (measured glyph
+  // canvas, so at a fixed 135px box they render visually uneven (measured glyph
   // heights: heart 55, shaker 60, others ~59). These per-icon factors normalise
-  // every glyph to ~59px so the row reads as one consistent set.
+  // every glyph so the row reads as one consistent set.
   const iconScale: { [key: string]: number } = {
     pushpin: 1.07, // Новичкам (heart) — smallest, scale up
     diamond: 0.97, // Барменам (shaker) — largest, scale down
@@ -520,11 +520,11 @@ function renderIconSVG(iconKey: string) {
       alt=""
       aria-hidden="true"
       loading="lazy"
-      width={108}
-      height={108}
+      width={135}
+      height={135}
       style={{
-        width: '108px',
-        height: '108px',
+        width: '135px',
+        height: '135px',
         objectFit: 'contain',
         transform: `scale(${iconScale[iconKey] ?? 1})`,
         filter: 'drop-shadow(0 0 20px rgba(65, 128, 240, 0.6)) drop-shadow(0 0 40px rgba(65, 128, 240, 0.3))',
@@ -570,8 +570,8 @@ function AudienceCard({
       {/* Icon container — fixed size */}
       <div
         style={{
-          width: '108px',
-          height: '108px',
+          width: '135px',
+          height: '135px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

@@ -717,9 +717,10 @@ nav, button,
   .about-plane--right {
     width: 118px;
     top: auto;
-    bottom: 548px; /* bottom-anchored: the tags+button block below the text card is a
+    bottom: 512px; /* bottom-anchored: the tags+button block below the text card is a
                       constant ~557px tall, so this keeps the plane in the card's
-                      bottom-right pocket regardless of how the paragraph text reflows */
+                      bottom-right pocket regardless of how the paragraph text reflows.
+                      Lowered from 548 → 512 per client ("чуть пониже"). */
     right: -12px;
   }
 
