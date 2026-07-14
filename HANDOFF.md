@@ -182,6 +182,20 @@ lib/utils.ts
 
 **Состояние:** `tsc --noEmit` чистый; Vercel-install чинён (мёртвый `pnpm.overrides` убран, frozen install проходит); всё запушено в `barc2`.
 
+### Раунд 16 — веб-админка аналитики (целиком на Vercel)
+Заказчик хотел админ-панель со статистикой. Решили НЕ через Telegram-бота (он остаётся на своём хосте для оплат/доступа), а **своей веб-панелью на Vercel**, всё в `barc2`. 4 метрики: всего посещений / без повторных (уникальные) / отказы / клики «Перейти к оплате».
+- **БД — Turso** (serverless SQLite, free-план Starter, $0). Драйвер `@libsql/client/web` (чистый HTTP, без нативных зависимостей → работает в serverless). Одна таблица `events(id,type,target,visitor_id,session_id,path,created_at)`. Схему создаёт **`node --env-file=.env.local scripts/init-db.mjs`** (один раз; удалённая БД общая для всех окружений Vercel).
+- **Сбор:** `components/analytics-tracker.tsx` (клиент, смонтирован в `app/layout.tsx`) — `pageview` при загрузке + делегированный слушатель кликов по `[data-track]`; шлёт `sendBeacon → /api/track`. `visitor_id` в localStorage (уникальные), `session_id` в sessionStorage (отказы). Атрибуты `data-track` расставлены: `pay` (кнопка «Перейти к оплате», `pricing.tsx`), `telegram`/`instagram` (`SocialLinks`, `nav.tsx`), `contact` («Связаться со мной», `page.tsx`). Трекер НЕ пишет события на самих `/admin` страницах.
+- **Эндпоинт:** `app/api/track/route.ts` (`runtime='nodejs'`) — валидирует и пишет строку; всегда отвечает 204 (fire-and-forget).
+- **Метрики:** `lib/db.ts` → `getMetrics(range)`. Отказ = сессия с pageview и БЕЗ клика по любой из `OUTBOUND_TARGETS` (pay/telegram/instagram/contact). Клики подписки = `target='pay'`. Диапазоны: сегодня/7д/30д/всё.
+- **Панель:** `app/admin/page.tsx` (server, `force-dynamic`) — 4 карточки + вкладки-диапазоны, тёмный BARCODE-стиль. Логаут — `app/admin/logout-button.tsx`.
+- **Авторизация:** пароль из env `ADMIN_PASSWORD`. `app/admin/login` → `POST /api/admin/login` сверяет пароль, ставит httpOnly-cookie = HMAC(пароль) (`lib/auth.ts`, только Web Crypto → работает в Edge). `middleware.ts` гейтит `/admin` (кроме `/admin/login`). Пароль в куке не хранится.
+- **ENV на Vercel:** `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` (ставит интеграция Turso в маркетплейсе), **`ADMIN_PASSWORD` — задать вручную** (Production/Preview). Локально всё это в `web/.env.local` (в `.gitignore`).
+- **Проверено локально сквозь:** контрольные события → метрики в панели совпали точно (посещений 4 / уник 3 / отказов 2=67% / оплат 1); клиентский pageview и клик по `data-track` пишутся; middleware-редирект + логин + панель работают. Тестовые данные из БД вычищены (старт с 0). `tsc` чистый, frozen-install проходит.
+- **NB:** (1) «Клики к оплате» = сколько ОТПРАВЛЕНО на Tribute, НЕ число оплат (оплату знает только Tribute/бот). (2) Turso-токен светился в чате → заказчику стоит его перевыпустить. (3) `next build` локально не гоняли (нельзя при живом dev, нюанс №7) — билд на Vercel.
+
+**Состояние:** аналитическая веб-панель готова и проверена локально; `tsc` чистый; frozen-install ок; `.env.local` в гит не идёт. Для прод-работы панели на Vercel нужен `ADMIN_PASSWORD` (Turso-переменные уже там от интеграции).
+
 ---
 
 ## Не сделано / требует данных заказчика

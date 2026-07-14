@@ -541,6 +541,7 @@ function PlanModal({ plan, onClose }: { plan: Plan; onClose: () => void }) {
             href="https://web.tribute.tg/s/10KH"
             target="_blank"
             rel="noopener noreferrer"
+            data-track="pay"
             className="btn-cta mt-6 flex w-full items-center justify-center px-6 py-[16px] text-[13px]"
           >
             Перейти к оплате
