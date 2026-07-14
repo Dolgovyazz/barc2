@@ -255,6 +255,16 @@ scripts/init-db.mjs — (Р16) разовое создание схемы в Tur
 - Звезда-бейдж «BC» сдвинута правее: `nav.tsx`, `right` → **−15px** (в несколько заходов; остальное — 18px, top 0). На −15 звезда заходит на «C» лишь на ~3px (задевает верх-правый угол, основная часть справа от буквы).
 - FAQ (`faq.tsx`, вопрос «Могу ли я предложить тему для статьи?»): «Пиши в чат (тариф Бармен) или в личные сообщения» → **«Пиши в личные сообщения»**.
 
+### Раунд 24 — SEO-метаданные (пробежка по метаданным)
+Заполнил пробелы в SEO/OG (`app/layout.tsx` + новые файлы):
+- **`metadataBase`** задан (раньше не было — Next ругался, относительные URL не резолвились). Базовый URL в `lib/site.ts`: `NEXT_PUBLIC_SITE_URL` → иначе `VERCEL_PROJECT_PRODUCTION_URL` (авто прод-домен Vercel) → иначе `localhost:3000`.
+- Добавлены: `alternates.canonical`, `openGraph.url`, `robots` (index/follow + googleBot `max-image-preview:large`), `authors/creator/publisher`, `category`, +2 keyword (миксология, барные техники).
+- **OG-картинка** — `app/opengraph-image.tsx` (`ImageResponse`, `runtime='edge'`): тёмный радиальный градиент + глянцевая синяя звезда + «BARCODE» + «библиотека барного дела», 1200×630. Шрифт **Montserrat (latin+cyrillic)** скачан в `app/_og/montserrat-bold.ttf` (64КБ, через Google Fonts old-UA-трюк для TTF), читается `fetch(new URL('./_og/montserrat-bold.ttf', import.meta.url))`. Next АВТО-линкует её и в `og:image`, и в `twitter:image`. Раньше OG-картинки не было вообще (при шаринге в Telegram — превью без картинки).
+- **`app/robots.ts`** (robots.txt: allow `/`, disallow `/admin`,`/api`, + sitemap + host) и **`app/sitemap.ts`** (одна страница).
+- **JSON-LD** (Schema.org `WebSite`+`Organization`, `sameAs` Instagram) в `layout.tsx`.
+- Проверено локально: все мета-теги в HTML, `/robots.txt`, `/sitemap.xml`, `/opengraph-image` (200 PNG — отрисовку глянул, выглядит фирменно); `tsc` чистый.
+- **NB для заказчика:** если появится КАСТОМНЫЙ домен — задать `NEXT_PUBLIC_SITE_URL` в env Vercel (иначе canonical/OG берут авто-URL Vercel, что тоже валидно). `next build` локально не гоняли (нюанс №7), но edge-OG отрисовался в dev — на Vercel соберётся.
+
 ---
 
 ## Не сделано / требует данных заказчика
