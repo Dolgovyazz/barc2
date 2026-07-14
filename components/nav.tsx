@@ -13,14 +13,14 @@ const navLinks: { label: string; href: string }[] = [
 function SocialLinks() {
   return (
     <div className="flex items-center gap-3" style={{ color: 'var(--text-primary)' }}>
-      <a href="#" aria-label="Instagram" className="transition-opacity hover:opacity-70">
+      <a href="https://www.instagram.com/barcode_community" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="transition-opacity hover:opacity-70">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="2" y="2" width="20" height="20" rx="5" />
           <circle cx="12" cy="12" r="4" />
           <line x1="17.5" y1="6.5" x2="17.5" y2="6.5" />
         </svg>
       </a>
-      <a href="#" aria-label="Telegram" className="transition-opacity hover:opacity-70">
+      <a href="https://telegram.dog/+-gl1xcnOGwFmOWEy" target="_blank" rel="noopener noreferrer" aria-label="Telegram" className="transition-opacity hover:opacity-70">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="22" y1="2" x2="11" y2="13" />
           <polygon points="22 2 15 22 11 13 2 9 22 2" />

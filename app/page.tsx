@@ -118,7 +118,13 @@ const audienceCards = [
 
 export default function Page() {
   return (
-    <div className="relative w-full">
+    // overflow-x-clip contains the decorations that intentionally peek past the
+    // content (hero corner stars, about planes). On phones there is no gutter, so
+    // those peeks would otherwise overflow the viewport and let the page pan
+    // sideways into empty space. `clip` (unlike `hidden`) clips WITHOUT creating a
+    // scroll container, so the sticky nav keeps working — which is why this can't
+    // just live on a wrapper as plain overflow:hidden.
+    <div className="relative w-full overflow-x-clip">
       <Decorations />
       <ScrollReveal />
 
@@ -129,20 +135,22 @@ export default function Page() {
         <header id="hero" className="relative -mt-[60px] flex min-h-[100svh] flex-col items-center justify-center px-5 py-10 text-center md:-mt-[90px]">
           {/* Floating glossy 3D stars — balanced diagonal so the hero doesn't
               lean to one side (bigger star left, smaller star right) */}
+          {/* Hidden on phones: at calc(50% - 512px) they fly far off a narrow
+              viewport (invisible there anyway) and would only add overflow. */}
           <GlossyStar
             size={88}
-            className="glossy-float pointer-events-none absolute"
+            className="glossy-float pointer-events-none absolute hidden md:block"
             style={{ top: '16%', left: 'calc(50% - 512px)' }}
           />
           <GlossyStar
             size={66}
-            className="glossy-float-2 pointer-events-none absolute"
+            className="glossy-float-2 pointer-events-none absolute hidden md:block"
             style={{ bottom: '18%', right: 'calc(50% - 512px)' }}
           />
           {/* Mirror of the bottom-right star, balancing the empty bottom-left band */}
           <GlossyStar
             size={66}
-            className="glossy-float pointer-events-none absolute"
+            className="glossy-float pointer-events-none absolute hidden md:block"
             style={{ bottom: '18%', left: 'calc(50% - 512px)' }}
           />
 
@@ -172,7 +180,7 @@ export default function Page() {
           <div className="relative flex items-center justify-center">
             <svg
               aria-hidden="true"
-              className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+              className="hero-bg-star pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
               style={{ width: 'min(920px,98vw)', height: 'auto', opacity: 0.055, zIndex: 0 }}
               viewBox="0 0 100 100"
               fill="none"
@@ -494,6 +502,18 @@ function renderIconSVG(iconKey: string) {
   const iconUrl = iconMap[iconKey]
   if (!iconUrl) return null
 
+  // The source PNGs draw their glyph at slightly different scales inside the same
+  // canvas, so at a fixed 108px box they render visually uneven (measured glyph
+  // heights: heart 55, shaker 60, others ~59). These per-icon factors normalise
+  // every glyph to ~59px so the row reads as one consistent set.
+  const iconScale: { [key: string]: number } = {
+    pushpin: 1.07, // Новичкам (heart) — smallest, scale up
+    diamond: 0.97, // Барменам (shaker) — largest, scale down
+    gear3d: 0.99, // Бар-менеджерам (people)
+    sparkle: 1.01, // Тем, кто хочет удивлять (hand)
+    dollar3d: 1.0, // Желающим зарабатывать (dollar)
+  }
+
   return (
     <img
       src={iconUrl}
@@ -506,6 +526,7 @@ function renderIconSVG(iconKey: string) {
         width: '108px',
         height: '108px',
         objectFit: 'contain',
+        transform: `scale(${iconScale[iconKey] ?? 1})`,
         filter: 'drop-shadow(0 0 20px rgba(65, 128, 240, 0.6)) drop-shadow(0 0 40px rgba(65, 128, 240, 0.3))',
       }}
     />

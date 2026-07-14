@@ -537,15 +537,14 @@ function PlanModal({ plan, onClose }: { plan: Plan; onClose: () => void }) {
             })}
           </div>
 
-          <button
-            type="button"
-            className="btn-cta mt-6 flex w-full items-center justify-center gap-2 px-6 py-[16px] text-[13px]"
+          <a
+            href="https://web.tribute.tg/s/10KH"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-cta mt-6 flex w-full items-center justify-center px-6 py-[16px] text-[13px]"
           >
             Перейти к оплате
-            <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '17px', height: '17px', flexShrink: 0, color: '#fff' }} aria-hidden="true">
-              <path d="M1.946 9.315c-.522-.174-.527-.455.01-.634L21.044 2.32c.529-.176.832.12.684.638l-5.454 19.086c-.15.529-.455.547-.679.045L12 14l6-8-8 6-8.054-2.685z" />
-            </svg>
-          </button>
+          </a>
         </div>
       </div>
     </div>

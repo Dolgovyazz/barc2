@@ -675,7 +675,8 @@ nav, button,
 }
 .about-plane--left {
   top: 24px;
-  left: -44px;
+  left: -115px; /* ~37% of the plane overlaps the glass card, the rest hangs in the
+                   gutter (client wanted 30–45% onto the frame). overlap% ≈ (185−|left|)/185 */
 }
 .about-plane--center {
   width: 130px;
@@ -685,7 +686,7 @@ nav, button,
 .about-plane--right {
   width: 185px;
   top: 230px;
-  right: -40px;
+  right: -115px; /* mirror of --left: ~37% of the plane overlaps the glass, rest in the gutter */
 }
 
 @media (max-width: 767px) {
@@ -697,24 +698,37 @@ nav, button,
      text line; centre plane moved to the button's top-left pocket (bottom-anchored,
      so it stays put regardless of text reflow above); right plane dropped into the
      text card's bottom-right empty pocket. */
+  /* All three planes enlarged (~+23%) per client. The left one grows but is pushed
+     further left in step, so its right edge (and thus how far it reaches over the
+     text) barely moves — bigger plane, same text clearance. */
   .about-plane--left {
-    top: 2px;
-    left: -46px;
+    width: 118px;
+    top: 0;
+    left: -66px;
   }
   .about-plane--center {
-    width: 88px;
+    width: 108px;
     top: auto;
-    bottom: 24px;
+    bottom: 74px; /* raised so the plane hovers just above the button's top-left corner
+                     (its bottom edge sits a few px above the button's top) */
     left: -22px;
     right: auto;
   }
   .about-plane--right {
-    width: 96px;
+    width: 118px;
     top: auto;
     bottom: 548px; /* bottom-anchored: the tags+button block below the text card is a
                       constant ~557px tall, so this keeps the plane in the card's
                       bottom-right pocket regardless of how the paragraph text reflows */
     right: -12px;
+  }
+
+  /* Faint background star behind the wordmark: nudge it DOWN a touch on phones so it
+     sits lower under the heading. Composes with Tailwind v4's `translate: -50% -50%`
+     (which does the centring via the separate `translate` property), so this only
+     adds a Y offset and keeps horizontal centring intact. Desktop is untouched. */
+  .hero-bg-star {
+    transform: translateY(44px);
   }
 }
 
