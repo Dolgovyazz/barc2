@@ -75,7 +75,7 @@ export function Nav() {
               width: '18px',
               height: '18px',
               top: '0px',
-              right: '-7px',
+              right: '-10px',
               filter: 'drop-shadow(0 0 4px rgba(26,111,255,0.65))',
             }}
           >
