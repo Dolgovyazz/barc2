@@ -770,24 +770,9 @@ button:focus-visible,
   border-radius: 6px;
 }
 
-/* Respect users who prefer no motion */
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-  .aurora,
-  .scroll-cue,
-  .glossy-float,
-  .glossy-float-2,
-  .decor-float,
-  .decor-float-slow,
-  .decor-spin,
-  .btn-cta::after {
-    animation: none !important;
-  }
-  .reveal-ready .reveal {
-    opacity: 1 !important;
-    transform: none !important;
-    transition: none !important;
-  }
-}
+/* NOTE: prefers-reduced-motion is intentionally NOT honored (client request) —
+   animations must always play, incl. in energy-saving / Yandex Browser where the
+   OS reports "reduce motion". The block that disabled aurora / floats / button
+   sheen / scroll-reveal was removed on purpose. The JS gate in scroll-reveal.tsx
+   was removed too. Trade-off: users who deliberately set reduce-motion still get
+   full motion. */
