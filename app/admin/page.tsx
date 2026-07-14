@@ -11,6 +11,7 @@ import {
 } from '@/lib/db'
 import { LogoutButton } from './logout-button'
 import { MetricChart } from './metric-chart'
+import { ResetButton } from './reset-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -242,9 +243,19 @@ export default async function AdminPage({
 
             <p style={{ fontSize: '12px', color: 'var(--text-label, #3a5a8a)', marginTop: '20px', lineHeight: 1.6 }}>
               «Клики к оплате» — сколько раз нажали «Перейти к оплате» (отправка на Tribute), а не
-              число реальных оплат: оплату подтверждает только Tribute/бот. «Отказ» — сессия, где
-              человек зашёл, но не кликнул ни по одной ссылке наружу.
+              число реальных оплат: оплату подтверждает только Tribute/бот. «Отказ» — уникальный
+              посетитель, который зашёл, но не кликнул ни по одной ссылке наружу.
             </p>
+
+            <div
+              style={{
+                marginTop: '28px',
+                paddingTop: '18px',
+                borderTop: '1px solid rgba(120,170,255,0.12)',
+              }}
+            >
+              <ResetButton />
+            </div>
           </>
         )}
       </div>

@@ -34,6 +34,11 @@ export async function insertEvent(e: {
   })
 }
 
+/** Wipe all analytics events (admin "reset stats"). Irreversible. */
+export async function resetEvents(): Promise<void> {
+  await getDb().execute('DELETE FROM events')
+}
+
 export type Range = 'today' | '7d' | '30d' | 'all'
 export const RANGES: { key: Range; label: string }[] = [
   { key: 'today', label: 'Сегодня' },
@@ -85,15 +90,16 @@ export async function getMetrics(range: Range): Promise<Metrics> {
       sql: `SELECT COUNT(DISTINCT session_id) AS n FROM events WHERE type='pageview' AND created_at >= ?`,
       args: [since],
     }),
-    // Bounce = a session that had a pageview but never clicked any outbound link
-    // ("зашли, никуда не перешли").
+    // Bounce = a unique VISITOR that had a pageview but never clicked any
+    // outbound link ("зашли, никуда не перешли"). Counted per visitor_id (not
+    // per session), so bounces are always ≤ unique visitors.
     db.execute({
       sql: `SELECT COUNT(*) AS n FROM (
-              SELECT DISTINCT session_id FROM events
+              SELECT DISTINCT visitor_id FROM events
               WHERE type='pageview' AND created_at >= ?
-            ) pv
-            WHERE pv.session_id NOT IN (
-              SELECT session_id FROM events
+            ) v
+            WHERE v.visitor_id NOT IN (
+              SELECT visitor_id FROM events
               WHERE type='click' AND target IN (${outPlaceholders}) AND created_at >= ?
             )`,
       args: [since, ...OUTBOUND_TARGETS, since],
@@ -104,14 +110,15 @@ export async function getMetrics(range: Range): Promise<Metrics> {
     }),
   ])
 
-  const sessionCount = num(sessions.rows[0].n)
+  const uniqueVisitors = num(uniques.rows[0].n)
   const bounceCount = num(bounces.rows[0].n)
   return {
     totalVisits: num(totals.rows[0].n),
-    uniqueVisitors: num(uniques.rows[0].n),
-    sessions: sessionCount,
+    uniqueVisitors,
+    sessions: num(sessions.rows[0].n),
     bounces: bounceCount,
-    bounceRate: sessionCount ? Math.round((bounceCount / sessionCount) * 100) : 0,
+    // rate is out of unique visitors now (bounce = visitor with no outbound click)
+    bounceRate: uniqueVisitors ? Math.round((bounceCount / uniqueVisitors) * 100) : 0,
     subscribeClicks: num(subs.rows[0].n),
   }
 }
@@ -160,12 +167,12 @@ export async function getSeries(metric: MetricKey, range: Range): Promise<Series
     const out = OUTBOUND_TARGETS.map(() => '?').join(',')
     const r = await db.execute({
       sql: `SELECT ${bucket('first_ts')} AS bucket, COUNT(*) AS n FROM (
-              SELECT session_id, MIN(created_at) AS first_ts
+              SELECT visitor_id, MIN(created_at) AS first_ts
               FROM events WHERE type='pageview' AND created_at >= ?
-              GROUP BY session_id
+              GROUP BY visitor_id
             )
-            WHERE session_id NOT IN (
-              SELECT session_id FROM events
+            WHERE visitor_id NOT IN (
+              SELECT visitor_id FROM events
               WHERE type='click' AND target IN (${out}) AND created_at >= ?
             )
             GROUP BY bucket`,

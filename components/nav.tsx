@@ -63,8 +63,38 @@ export function Nav() {
       }}
     >
       <div className="relative mx-auto flex max-w-[1200px] items-center justify-between px-5 py-3 md:py-3.5">
-        <a href="#hero" className="text-[22px] font-bold md:text-[28px]" style={{ color: 'var(--text-primary)' }}>
+        <a href="#hero" className="relative inline-block text-[22px] font-bold md:text-[28px]" style={{ color: 'var(--text-primary)' }}>
           BC
+          {/* Small glossy blue star badge at the top-right — same star as the
+              favicon / hero GlossyStar, replacing the placeholder red dot. */}
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 100 100"
+            className="absolute"
+            style={{
+              width: '18px',
+              height: '18px',
+              top: '0px',
+              right: '-7px',
+              filter: 'drop-shadow(0 0 4px rgba(26,111,255,0.65))',
+            }}
+          >
+            <defs>
+              <linearGradient id="bcstar-body" x1="0.15" y1="0.1" x2="0.85" y2="0.95">
+                <stop offset="0%" stopColor="#e2efff" />
+                <stop offset="32%" stopColor="#5f9dff" />
+                <stop offset="66%" stopColor="#1a6fff" />
+                <stop offset="100%" stopColor="#0e47a0" />
+              </linearGradient>
+              <radialGradient id="bcstar-sheen" cx="0.36" cy="0.3" r="0.5">
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
+                <stop offset="55%" stopColor="#ffffff" stopOpacity="0.12" />
+                <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+              </radialGradient>
+            </defs>
+            <path d="M50 3 C53 33 67 47 97 50 C67 53 53 67 50 97 C47 67 33 53 3 50 C33 47 47 33 50 3Z" fill="url(#bcstar-body)" />
+            <path d="M50 3 C53 33 67 47 97 50 C67 53 53 67 50 97 C47 67 33 53 3 50 C33 47 47 33 50 3Z" fill="url(#bcstar-sheen)" />
+          </svg>
         </a>
 
         {/* Desktop links — absolutely centred on the bar so the logo/social width
