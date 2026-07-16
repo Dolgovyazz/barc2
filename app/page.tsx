@@ -369,8 +369,10 @@ export default function Page() {
               {/* Transparent spacer */}
               <div style={{ height: '24px', background: 'transparent' }} />
 
-              <button
-                type="button"
+              <a
+                href="https://telegram.dog/Shakonte"
+                target="_blank"
+                rel="noopener noreferrer"
                 data-track="contact"
                 className="btn-cta"
                 style={{
@@ -423,7 +425,7 @@ export default function Page() {
                   }}
                 />
                 Связаться со мной
-              </button>
+              </a>
             </div>
             </div>
           </div>
