@@ -370,7 +370,7 @@ export default function Page() {
               <div style={{ height: '24px', background: 'transparent' }} />
 
               <a
-                href="https://telegram.dog/Shakonte"
+                href="https://t.me/Shakonte"
                 target="_blank"
                 rel="noopener noreferrer"
                 data-track="contact"
