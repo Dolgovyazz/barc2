@@ -486,6 +486,14 @@ export default function Page() {
             на основе общедоступных стандартов IBA. Товарный знак IBA принадлежит
             правообладателю»
           </p>
+          <p className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
+            <a href="/privacy-policy" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>
+              Политика конфиденциальности
+            </a>
+            <a href="/offer-agreement" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>
+              Договор оферты
+            </a>
+          </p>
           <p className="mt-3">© BARCODE 2026 . Все права защищены.</p>
         </footer>
       </div>

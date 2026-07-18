@@ -302,6 +302,9 @@ function AccordionItem({ title, content, isOpen, onToggle }: { title: string; co
 
 function PlanModal({ plan, onClose }: { plan: Plan; onClose: () => void }) {
   const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({})
+  // Payment is gated behind explicit consent to the legal documents — resets to
+  // false each time the modal mounts, so agreement is re-confirmed every visit.
+  const [agreed, setAgreed] = useState(false)
   const modalPanelRef = useRef<HTMLDivElement | null>(null)
 
   const toggleSection = (index: number) => {
@@ -537,15 +540,57 @@ function PlanModal({ plan, onClose }: { plan: Plan; onClose: () => void }) {
             })}
           </div>
 
-          <a
-            href="https://web.tribute.tg/s/10KH"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-track="pay"
-            className="btn-cta mt-6 flex w-full items-center justify-center px-6 py-[16px] text-[13px]"
+          {/* Consent gate — the row toggles the checkbox on click, except when a
+              document link is clicked (closest('a') guard lets the link open the
+              page in a new tab without also flipping the checkbox). */}
+          <div
+            className="consent-row mt-6 flex cursor-pointer select-none items-start gap-2.5"
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest('a')) return
+              setAgreed((v) => !v)
+            }}
           >
-            Перейти к оплате
-          </a>
+            <input
+              type="checkbox"
+              className="consent-checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              onClick={(e) => e.stopPropagation()}
+              aria-labelledby="consent-label"
+            />
+            <span id="consent-label" style={{ fontSize: '12px', lineHeight: 1.5, color: 'var(--text-muted)' }}>
+              Я подтверждаю своё согласие с условиями{' '}
+              <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="consent-link">
+                политики конфиденциальности
+              </a>
+              {' '}и{' '}
+              <a href="/offer-agreement" target="_blank" rel="noopener noreferrer" className="consent-link">
+                договора оферты
+              </a>
+            </span>
+          </div>
+
+          {agreed ? (
+            <a
+              href="https://web.tribute.tg/s/10KH"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-track="pay"
+              className="btn-cta mt-3 flex w-full items-center justify-center px-6 py-[16px] text-[13px]"
+            >
+              Перейти к оплате
+            </a>
+          ) : (
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              title="Отметьте согласие с условиями, чтобы продолжить"
+              className="btn-cta mt-3 flex w-full items-center justify-center px-6 py-[16px] text-[13px]"
+            >
+              Перейти к оплате
+            </button>
+          )}
         </div>
       </div>
     </div>
