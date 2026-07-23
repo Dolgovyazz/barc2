@@ -3,11 +3,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { Plus, CocktailGlass, Bottle } from '@/components/decorations'
 
+type PeriodCode = '1m' | '3m' | 'forever'
+
 type Plan = {
   id: 'enthusiast' | 'bartender'
   title: string
   features: string[]
-  subscriptions: { label: string; price: string; oldPrice?: string }[]
+  subscriptions: { code: PeriodCode; label: string; price: string; oldPrice?: string }[]
 }
 
 const enthusiast: Plan = {
@@ -19,7 +21,7 @@ const enthusiast: Plan = {
     'Гайд по базовому инвентарю',
     'Техники приготовления',
   ],
-  subscriptions: [{ label: 'Навсегда', price: '1000 ₽' }],
+  subscriptions: [{ code: 'forever', label: 'Навсегда', price: '1000 ₽' }],
 }
 
 const bartender: Plan = {
@@ -33,9 +35,9 @@ const bartender: Plan = {
     'Авторские коктейли',
   ],
   subscriptions: [
-    { label: '1 месяц', price: '599 ₽', oldPrice: '699 ₽' },
-    { label: '3 месяца', price: '1499 ₽', oldPrice: '1599 ₽' },
-    { label: 'Навсегда', price: '4999 ₽', oldPrice: '5999 ₽' },
+    { code: '1m', label: '1 месяц', price: '599 ₽', oldPrice: '699 ₽' },
+    { code: '3m', label: '3 месяца', price: '1499 ₽', oldPrice: '1599 ₽' },
+    { code: 'forever', label: 'Навсегда', price: '4999 ₽', oldPrice: '5999 ₽' },
   ],
 }
 
@@ -305,6 +307,11 @@ function PlanModal({ plan, onClose }: { plan: Plan; onClose: () => void }) {
   // Payment is gated behind explicit consent to the legal documents — resets to
   // false each time the modal mounts, so agreement is re-confirmed every visit.
   const [agreed, setAgreed] = useState(false)
+  // Which subscription period the user picked — drives the deep-link payload
+  // sent to the bot (buy_<tariff>_<period>). Default: first option.
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodCode>(
+    plan.subscriptions[0].code,
+  )
   const modalPanelRef = useRef<HTMLDivElement | null>(null)
 
   const toggleSection = (index: number) => {
@@ -510,14 +517,39 @@ function PlanModal({ plan, onClose }: { plan: Plan; onClose: () => void }) {
           <p className="mb-3 mt-7 text-center text-[16px] font-semibold" style={{ color: 'var(--text-primary)' }}>
             Выберите подписку
           </p>
-          <div className="space-y-3">
+          <div className="space-y-3" role="radiogroup" aria-label="Срок подписки">
             {plan.subscriptions.map((s) => {
               const isBest = s.label === 'Навсегда'
+              const isSelected = selectedPeriod === s.code
+              const isPickable = plan.subscriptions.length > 1
               return (
                 <div
-                  key={s.label}
+                  key={s.code}
+                  role={isPickable ? 'radio' : undefined}
+                  aria-checked={isPickable ? isSelected : undefined}
+                  tabIndex={isPickable ? 0 : undefined}
+                  onClick={isPickable ? () => setSelectedPeriod(s.code) : undefined}
+                  onKeyDown={
+                    isPickable
+                      ? (e) => {
+                          if (e.key === ' ' || e.key === 'Enter') {
+                            e.preventDefault()
+                            setSelectedPeriod(s.code)
+                          }
+                        }
+                      : undefined
+                  }
                   className={`sub-row flex items-center justify-between${isBest ? ' sub-row--best' : ''}`}
-                  style={{ background: 'var(--bg-card-alt)', padding: '18px 20px', borderRadius: '14px' }}
+                  style={{
+                    background: 'var(--bg-card-alt)',
+                    padding: '18px 20px',
+                    borderRadius: '14px',
+                    cursor: isPickable ? 'pointer' : 'default',
+                    outline: isSelected && isPickable ? '2px solid var(--accent-primary)' : 'none',
+                    outlineOffset: isSelected && isPickable ? '-2px' : undefined,
+                    boxShadow: isSelected && isPickable ? '0 0 0 1px rgba(26,111,255,0.35), 0 0 24px rgba(26,111,255,0.22)' : undefined,
+                    transition: 'outline 0.15s ease, box-shadow 0.15s ease',
+                  }}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span className="text-[16px] font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -572,7 +604,7 @@ function PlanModal({ plan, onClose }: { plan: Plan; onClose: () => void }) {
 
           {agreed ? (
             <a
-              href="https://web.tribute.tg/s/10KH"
+              href={`${process.env.NEXT_PUBLIC_BOT_URL || 'https://t.me/bdmvn432woi5bot'}?start=buy_${plan.id}_${selectedPeriod}`}
               target="_blank"
               rel="noopener noreferrer"
               data-track="pay"

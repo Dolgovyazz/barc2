@@ -55,7 +55,7 @@ export default async function AdminPage({
         { key: 'visits', label: 'Всего посещений', value: metrics.totalVisits, hint: 'все загрузки страницы' },
         { key: 'unique', label: 'Без повторных заходов', value: metrics.uniqueVisitors, hint: 'уникальные посетители' },
         { key: 'bounces', label: 'Отказы', value: metrics.bounces, hint: `${metrics.bounceRate}% — зашли и ушли` },
-        { key: 'subscribe', label: 'Клики «Перейти к оплате»', value: metrics.subscribeClicks, hint: 'отправлено на оплату Tribute' },
+        { key: 'subscribe', label: 'Клики «Перейти к оплате»', value: metrics.subscribeClicks, hint: 'отправлено в бота на оплату' },
       ]
     : []
 
@@ -242,8 +242,8 @@ export default async function AdminPage({
             )}
 
             <p style={{ fontSize: '12px', color: 'var(--text-label, #3a5a8a)', marginTop: '20px', lineHeight: 1.6 }}>
-              «Клики к оплате» — сколько раз нажали «Перейти к оплате» (отправка на Tribute), а не
-              число реальных оплат: оплату подтверждает только Tribute/бот. «Отказ» — уникальный
+              «Клики к оплате» — сколько раз нажали «Перейти к оплате» (переход в бота), а не
+              число реальных оплат: оплату подтверждает только CloudPayments/бот. «Отказ» — уникальный
               посетитель, который зашёл, но не кликнул ни по одной ссылке наружу.
             </p>
 
