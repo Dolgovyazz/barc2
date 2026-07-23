@@ -604,7 +604,7 @@ function PlanModal({ plan, onClose }: { plan: Plan; onClose: () => void }) {
 
           {agreed ? (
             <a
-              href={`${process.env.NEXT_PUBLIC_BOT_URL || 'https://t.me/bdmvn432woi5bot'}?start=buy_${plan.id}_${selectedPeriod}`}
+              href={`${process.env.NEXT_PUBLIC_BOT_URL || 'https://t.me/barcodepayments_bot'}?start=buy_${plan.id}_${selectedPeriod}`}
               target="_blank"
               rel="noopener noreferrer"
               data-track="pay"
